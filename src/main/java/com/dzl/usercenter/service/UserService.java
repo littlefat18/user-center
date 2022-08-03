@@ -5,6 +5,7 @@ import com.dzl.usercenter.model.domain.User;
 import org.springframework.http.HttpRequest;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author genius
@@ -22,7 +23,15 @@ public interface UserService extends IService<User> {
      * @param checkPassword 校验密码
      * @return 新用户 id
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword);
+    long userRegister(String userAccount, String userPassword, String checkPassword,String planetCode);
+
+
+    /**
+     * 根据用户搜索标签
+     * @param tagNameList
+     * @return
+     */
+    List<User> searchUsersByTags(List<String> tagNameList);
 
     /**
      * 用户登录业务逻辑
@@ -38,4 +47,14 @@ public interface UserService extends IService<User> {
      * @return
      */
     User getSafetyUser(User originUser);
+
+    /**
+     * 用户注销
+     * @param request
+     * @return
+     */
+    int userLogout (HttpServletRequest request);
+
+
+
 }

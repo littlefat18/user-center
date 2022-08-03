@@ -1,8 +1,11 @@
 package com.dzl.usercenter.service;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dzl.usercenter.model.domain.User;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,37 +51,46 @@ class UserServiceTest {
 
     @Test
     void userRegister() {
-        String userAccount = "tiancai";
+        String userAccount = "dingziluo";
         String userPassword = "12345678";
         String checkPassword = "12345678";
-//        long result = userService.userRegister(userAccount, userPassword, checkPassword);
-//        Assertions.assertEquals(-1, result);
-//
+        String planetCode ="2";
+        long result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
+        Assertions.assertEquals(-1, result);
+
 //        userAccount = "yu";
-//        result = userService.userRegister(userAccount, userPassword, checkPassword);
+//        result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
 //        Assertions.assertEquals(-1, result);
 //
 //        userAccount = "yupi";
 //        userPassword = "123456";
-//        result = userService.userRegister(userAccount, userPassword, checkPassword);
+//        result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
 //        Assertions.assertEquals(-1, result);
 //
 //        userAccount = "yu pi";
 //        userPassword = "12345678";
-//        result = userService.userRegister(userAccount, userPassword, checkPassword);
+//        result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
 //        Assertions.assertEquals(-1, result);
 //
 //        checkPassword = "123456789";
-//        result = userService.userRegister(userAccount, userPassword, checkPassword);
+//        result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
 //        Assertions.assertEquals(-1, result);
 //
 //        userAccount = "dogyupi";
 //        checkPassword = "12345678";
-//        result = userService.userRegister(userAccount, userPassword, checkPassword);
+//        result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
 //        Assertions.assertEquals(-1, result);
-
+//
 //        userAccount = "yupi";
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
-        Assertions.assertEquals(4, result);
+//        result = userService.userRegister(userAccount, userPassword, checkPassword,planetCode);
+//        Assertions.assertEquals(-1, result);
+    }
+
+    @Test
+    public void testSearchByTags(){
+        List<String> tagNameList = Arrays.asList("java");
+        List<User> userList = userService.searchUsersByTags(tagNameList);
+        Assert.assertNotNull(userList);
+
     }
 }

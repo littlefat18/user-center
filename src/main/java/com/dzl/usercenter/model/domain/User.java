@@ -77,10 +77,22 @@ public class User implements Serializable {
     private Date updateTime;
 
     /**
+     * 星球编号
+     */
+    private String planetCode;
+
+    /**
+     * 星球编号
+     */
+    private String tags;
+
+    /**
      * 是否删除
      */
     @TableLogic
     private Integer isDelete;
+
+
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
