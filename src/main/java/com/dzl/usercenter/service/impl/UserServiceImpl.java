@@ -3,6 +3,7 @@ package com.dzl.usercenter.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dzl.usercenter.common.ErrorCode;
+import com.dzl.usercenter.constant.UserConstant;
 import com.dzl.usercenter.exception.BusinessException;
 import com.dzl.usercenter.mapper.UserMapper;
 import com.dzl.usercenter.model.domain.User;
@@ -10,6 +11,7 @@ import com.dzl.usercenter.service.UserService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -17,6 +19,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -113,15 +116,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 1.先查询所有用户
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        // 2.在内存中判断是否包含要求的标签
         List<User> userList = userMapper.selectList(queryWrapper);
         Gson gson = new Gson();
-        // 2.在内存中判断是否包含要求的标签
         return userList.stream().filter(user -> {
             String tagsStr = user.getTags();
-            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>(){}.getType());
-            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
-            for (String tagName : tagNameList) {
-                if(!tempTagNameSet.contains(tagName)) {
+            Set<String> temTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {}.getType());
+            temTagNameSet = Optional.ofNullable(temTagNameSet).orElse(new HashSet<>());
+            for (String tagName:tagNameList) {
+                if (!temTagNameSet.contains(tagName)){
                     return false;
                 }
             }
@@ -186,6 +189,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User safetyUser = getSafetyUser(user);
         // 5.记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
+        System.out.println(request.getSession().getId());
 
         return safetyUser;
     }
@@ -223,6 +227,63 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //移除用户登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return 1;
+    }
+
+    @Override
+    public int updateUser(User user, User loginUser) {
+        long userId = user.getId();
+        if (userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // todo 补充校验，如果用户没有传任何要更新的值，就直接报错，不用执行 update 语句
+        // 如果是管理员，允许更新任意用户
+        // 如果不是管理员，只允许更新当前（自己的）信息
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        return userMapper.updateById(user);
+
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        if (userObj == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        return (User) userObj;
+    }
+
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+        // 仅管理员可查询
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    /**
+     * 是否为管理员
+     *
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public boolean isAdmin(User loginUser) {
+        return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;
     }
 
 
