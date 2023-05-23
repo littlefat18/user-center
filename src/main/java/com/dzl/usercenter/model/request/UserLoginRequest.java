@@ -1,4 +1,4 @@
-package com.dzl.usercenter.model.domain.request;
+package com.dzl.usercenter.model.request;
 
 import lombok.Data;
 

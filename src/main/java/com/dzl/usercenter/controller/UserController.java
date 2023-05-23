@@ -8,19 +8,20 @@ import com.dzl.usercenter.common.ErrorCode;
 import com.dzl.usercenter.common.ResultUtils;
 import com.dzl.usercenter.exception.BusinessException;
 import com.dzl.usercenter.model.domain.User;
-import com.dzl.usercenter.model.domain.request.UserLoginRequest;
-import com.dzl.usercenter.model.domain.request.UserRegisterRequest;
+import com.dzl.usercenter.model.request.UserLoginRequest;
+import com.dzl.usercenter.model.request.UserRegisterRequest;
+import com.dzl.usercenter.model.vo.UserVO;
 import com.dzl.usercenter.service.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,10 +36,14 @@ import static com.dzl.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 @RequestMapping("/user")
 @Api(tags = "用户管理接口")
 @CrossOrigin(origins = {"http://localhost:3000"})
+@Slf4j
 public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RedisTemplate<String,Object> redisTemplate;
 
     @PostMapping("/register")
     @ApiOperation("用户注册")
@@ -143,11 +148,11 @@ public class UserController {
     }
 
     @GetMapping("/recommend")
-    public BaseResponse<List<User>> recommendUsers(HttpServletRequest request) {
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        List<User> userList = userService.list(queryWrapper);
-        List<User> list = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
-        return ResultUtils.success(list);
+    public BaseResponse<Page<User>> recommendUsers(long pageSize,long pageNum,HttpServletRequest request) {
+        Page<User> userPage = userService.recommendUsers(pageSize, pageNum, request);
+//        List<User> userList = userService.list(queryWrapper);
+//        List<User> list = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        return ResultUtils.success(userPage);
 
     }
 
@@ -167,6 +172,14 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    @GetMapping("/match")
+    public BaseResponse<List<User>> matchUsers(long num , HttpServletRequest request){
+        if (num <=0 || num > 20){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User user = userService.getLoginUser(request);
+        return ResultUtils.success(userService.matchUsers(num, user));
+    }
     /**
      * 判断是否为管理员
      * @param request

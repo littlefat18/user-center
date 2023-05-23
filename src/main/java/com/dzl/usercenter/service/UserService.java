@@ -1,5 +1,6 @@
 package com.dzl.usercenter.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.dzl.usercenter.model.domain.User;
 import org.springframework.http.HttpRequest;
@@ -69,6 +70,13 @@ public interface UserService extends IService<User> {
     User getLoginUser(HttpServletRequest request);
 
     /**
+     * 获取推荐用户
+     * @param pageSize
+     * @param pageNum
+     * @param request
+     */
+    Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request);
+    /**
      * 是否为管理员
      *
      * @param request
@@ -84,6 +92,11 @@ public interface UserService extends IService<User> {
      */
     boolean isAdmin(User loginUser);
 
-
-
+    /**
+     * 匹配推荐用户
+     * @param num
+     * @param user
+     * @return
+     */
+    List<User> matchUsers(long num, User user);
 }
