@@ -13,18 +13,16 @@ import com.dzl.usercenter.model.domain.Team;
 import com.dzl.usercenter.model.domain.User;
 import com.dzl.usercenter.model.domain.UserTeam;
 import com.dzl.usercenter.model.dto.TeamQuery;
-import com.dzl.usercenter.model.request.*;
+import com.dzl.usercenter.model.request.TeamAddRequest;
+import com.dzl.usercenter.model.request.TeamJoinRequest;
+import com.dzl.usercenter.model.request.TeamQuitRequest;
+import com.dzl.usercenter.model.request.TeamUpdateRequest;
 import com.dzl.usercenter.model.vo.TeamUserVO;
 import com.dzl.usercenter.service.TeamService;
 import com.dzl.usercenter.service.UserService;
 import com.dzl.usercenter.service.UserTeamService;
-import com.sun.xml.internal.bind.v2.TODO;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -34,9 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.dzl.usercenter.constant.UserConstant.ADMIN_ROLE;
-import static com.dzl.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户接口
@@ -143,10 +138,37 @@ public class TeamController {
     }
     // TODO 分页
     @GetMapping("/list/page")
-    public BaseResponse<Page<Team>> listTeamsByPage(TeamQuery teamQuery){
+    public BaseResponse<Page<Team>> listTeamsByPage(TeamQuery teamQuery, HttpServletRequest request){
         if (teamQuery == null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+//        boolean isAdmin = userService.isAdmin(request);
+//        List<TeamUserVO> teamList = teamService.listTeams(teamQuery , isAdmin);
+//        // 判断当前用户是否已经加入队伍
+//        // teamIdList 是查询出来的team的id的集合
+//        // userTeamList 是查出来当前用户加入的team集合
+//        // hasJoinTeamIdSet 是当前用户加入team的id的集合
+//        final List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
+//        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+//        User loginUser = userService.getLoginUser(request);
+//        userTeamQueryWrapper.eq("userId",loginUser.getId());
+//        userTeamQueryWrapper.in("teamId",teamIdList);
+//        List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+//        // 已加入的队伍id集合
+//        Set<Long> hasJoinTeamIdSet = userTeamList.stream().map(UserTeam::getTeamId).collect(Collectors.toSet());
+//        teamList.forEach(team ->{
+//            boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
+//            team.setHasJoin(hasJoin);
+//        });
+//        // 查询已加入队伍的人数
+//        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+//        userTeamJoinQueryWrapper.in("teamId",teamIdList);
+//        List<UserTeam> userTeamList1 = userTeamService.list(userTeamJoinQueryWrapper);
+//        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList1.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+//        teamList.forEach(team -> {
+//            int hasJoinNum = teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size();
+//            team.setHasJoinNum(hasJoinNum);
+//        });
         Team team = BeanUtil.copyProperties(teamQuery, Team.class);
         Page<Team> page = new Page<>(teamQuery.getPageNum(),teamQuery.getPageSize());
         QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
@@ -194,6 +216,16 @@ public class TeamController {
         User loginUser = userService.getLoginUser(request);
         teamQuery.setUserId(loginUser.getId());
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery , true);
+        // 创建的队伍的id集合
+        final List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
+        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+        userTeamJoinQueryWrapper.in("teamId",teamIdList);
+        List<UserTeam> userTeamList1 = userTeamService.list(userTeamJoinQueryWrapper);
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList1.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team -> {
+            int hasJoinNum = teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size();
+            team.setHasJoinNum(hasJoinNum);
+        });
         return ResultUtils.success(teamList);
     }
 
@@ -214,9 +246,19 @@ public class TeamController {
         List<UserTeam> userTeamList = userTeamService.list(queryWrapper);
         // 取出不重复的队伍id
         Map<Long, List<UserTeam>> listMap = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        // 已加入的队伍id集合
         List<Long> idList = new ArrayList<>(listMap.keySet());
         teamQuery.setIdList(idList);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery , true);
+        // 查询已加入队伍的人数
+        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+        userTeamJoinQueryWrapper.in("teamId",idList);
+        List<UserTeam> userTeamList1 = userTeamService.list(userTeamJoinQueryWrapper);
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList1.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team -> {
+            int hasJoinNum = teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size();
+            team.setHasJoinNum(hasJoinNum);
+        });
         return ResultUtils.success(teamList);
     }
 }

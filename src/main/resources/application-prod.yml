@@ -1,4 +1,6 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/xingqiu
+    url: jdbc:mysql://124.221.78.176:3306/yupao
+server:
+  address: 0.0.0.0
