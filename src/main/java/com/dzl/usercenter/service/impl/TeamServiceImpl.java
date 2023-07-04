@@ -3,6 +3,7 @@ package com.dzl.usercenter.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dzl.usercenter.common.ErrorCode;
 import com.dzl.usercenter.constant.enums.TeamStatusEnum;
@@ -210,6 +211,90 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             teamUserVOList.add(teamUserVO);
         }
         return teamUserVOList;
+    }
+
+    @Override
+    public Page<TeamUserVO> listTeamsByPage(TeamQuery teamQuery, boolean isAdmin) {
+        QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
+        // 组合查询条件
+        if (teamQuery != null) {
+            Long id = teamQuery.getId();
+            if (id != null && id > 0) {
+                queryWrapper.eq("id", id);
+            }
+            List<Long> idList = teamQuery.getIdList();
+            if (CollectionUtil.isNotEmpty(idList)){
+                queryWrapper.in("id",idList);
+            }
+            String searchText = teamQuery.getSearchText();
+            if (StringUtils.isNotBlank(searchText)) {
+                queryWrapper.and(qw -> qw.like("name", searchText).or().like("description", searchText));
+            }
+            String teamName = teamQuery.getName();
+            if (StringUtils.isNotBlank(teamName)) {
+                queryWrapper.like("name", teamName);
+            }
+            String description = teamQuery.getDescription();
+            if (StringUtils.isNotBlank(teamName)) {
+                queryWrapper.like("description", description);
+            }
+            Integer maxNum = teamQuery.getMaxNum();
+            if (maxNum != null && maxNum > 0) {
+                queryWrapper.eq("maxNum", maxNum);
+            }
+            Long userId = teamQuery.getUserId();
+            // 根据创建人查询
+            if (userId != null && userId > 0) {
+                queryWrapper.eq("userId", userId);
+            }
+            // 根据状态查询
+            Integer status = teamQuery.getStatus();
+            TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
+            if (statusEnum == null) {
+                statusEnum = TeamStatusEnum.PUBLIC;
+            }
+            if (!isAdmin && statusEnum.equals(TeamStatusEnum.PRIVATE)) {
+                throw new BusinessException(ErrorCode.NO_AUTH);
+            }
+            queryWrapper.eq("status", statusEnum.getValue());
+        }
+        // 不展示已过期的队伍
+        // expireTime is null or expireTime > now()
+        queryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
+        Page<Team> pageList = page(new Page<>(teamQuery.getPageNum(), teamQuery.getPageSize()), queryWrapper);
+
+        //List<Team> teamList = list(queryWrapper);
+        if (pageList == null) {
+            return new Page<>();
+        }
+        List<Team> teamList = pageList.getRecords();
+        Page<TeamUserVO> teamUserVOPage = new Page<>(pageList.getCurrent(), pageList.getSize(),pageList.getTotal());
+        // 关联查询用户信息
+        // 1.自己写SQL
+        // 查询队伍和创建人的信息
+        // select * from team t left join user u on t.userId = u.id
+        // 查询队伍和已加入队伍成员的信息
+        // select * from team t join user_team ut on t.id = user_team.teamId
+
+        List<TeamUserVO> teamUserVOList = new ArrayList<>();
+        //关联查询创建人的用户信息
+        for (Team team : teamList) {
+            Long userId = team.getUserId();
+            if (userId == null) {
+                continue;
+            }
+            User user = userService.getById(userId);
+            //User safetyUser = userService.getSafetyUser(user);
+            TeamUserVO teamUserVO = BeanUtil.copyProperties(team, TeamUserVO.class);
+            // 脱敏用户信息
+            if (user != null) {
+                UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+                teamUserVO.setCreateUser(userVO);
+            }
+            teamUserVOList.add(teamUserVO);
+        }
+        teamUserVOPage.setRecords(teamUserVOList);
+        return teamUserVOPage;
     }
 
     @Override

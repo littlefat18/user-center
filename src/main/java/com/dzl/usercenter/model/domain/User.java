@@ -82,6 +82,11 @@ public class User implements Serializable {
     private String planetCode;
 
     /**
+     * 添加的好友
+     */
+    private String userIds;
+
+    /**
      * 星球编号
      */
     private String tags;

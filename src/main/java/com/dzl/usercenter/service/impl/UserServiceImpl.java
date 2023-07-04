@@ -1,6 +1,7 @@
 package com.dzl.usercenter.service.impl;
 
 import cn.hutool.core.lang.Pair;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -10,6 +11,7 @@ import com.dzl.usercenter.constant.UserConstant;
 import com.dzl.usercenter.exception.BusinessException;
 import com.dzl.usercenter.mapper.UserMapper;
 import com.dzl.usercenter.model.domain.User;
+import com.dzl.usercenter.model.request.UserQueryRequest;
 import com.dzl.usercenter.service.UserService;
 import com.dzl.usercenter.utils.AlgorithmUtils;
 import com.google.gson.Gson;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 
 import static com.dzl.usercenter.constant.RedisConstant.USER_RECOMMEND_KEY;
 import static com.dzl.usercenter.constant.UserConstant.USER_LOGIN_STATE;
+import static com.dzl.usercenter.utils.StringUtils.stringJsonListToLongSet;
 
 /**
  * @author genius
@@ -227,6 +230,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setUserRole(originUser.getUserRole());
         safetyUser.setPlanetCode(originUser.getPlanetCode());
         safetyUser.setTags(originUser.getTags());
+        safetyUser.setUserIds(originUser.getUserIds());
         return safetyUser;
 
     }
@@ -366,6 +370,59 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         return finalUserList;
 
+    }
+
+    @Override
+    public List<User> searchFriend(UserQueryRequest userQueryRequest, User currentUser) {
+        String searchText = userQueryRequest.getSearchText();
+        User user = this.getById(currentUser.getId());
+        Set<Long> friendsId = stringJsonListToLongSet(user.getUserIds());
+        List<User> users = new ArrayList<>();
+        Collections.shuffle(users);
+        friendsId.forEach(id -> {
+            User u = this.getById(id);
+            if (u.getUsername().contains(searchText)) {
+                users.add(u);
+            }
+        });
+        return users;
+    }
+
+    @Override
+    public boolean deleteFriend(User currentUser, Long id) {
+        User loginUser = this.getById(currentUser.getId());
+        User friendUser = this.getById(id);
+        Set<Long> friendsId = stringJsonListToLongSet(loginUser.getUserIds());
+        Set<Long> fid = stringJsonListToLongSet(friendUser.getUserIds());
+        friendsId.remove(id);
+        fid.remove(loginUser.getId());
+        String friends = new Gson().toJson(friendsId);
+        String fids = new Gson().toJson(fid);
+        loginUser.setUserIds(friends);
+        friendUser.setUserIds(fids);
+        return this.updateById(loginUser) && this.updateById(friendUser);
+    }
+
+    @Override
+    public List<User> getFriendsById(User currentUser) {
+        User loginUser = this.getById(currentUser.getId());
+        Set<Long> friendsId = stringJsonListToLongSet(loginUser.getUserIds());
+        return friendsId.stream().map(user -> this.getSafetyUser(this.getById(user))).collect(Collectors.toList());
+    }
+
+    @Override
+    public Boolean isFriend(Integer id , User currentUser) {
+        //String friendsId = currentUser.getUserIds();
+        long currentUserId = currentUser.getId();
+        User nowUser = getById(currentUserId);
+        String friendsId = nowUser.getUserIds();
+        System.out.println("===================="+friendsId);
+        List<Integer> friendsIds = JSONUtil.toList(friendsId, Integer.class);
+        System.out.println("===================="+friendsIds);
+        if (friendsIds == null){
+            return false;
+        }
+        return friendsIds.contains(id);
     }
 
 

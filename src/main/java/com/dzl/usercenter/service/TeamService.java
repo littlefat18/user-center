@@ -1,5 +1,6 @@
 package com.dzl.usercenter.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dzl.usercenter.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.dzl.usercenter.model.domain.User;
@@ -34,6 +35,14 @@ public interface TeamService extends IService<Team> {
     List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin);
 
     /**
+     * 分页查询队伍
+     * @param teamQuery
+     * @param isAdmin
+     * @return
+     */
+    Page<TeamUserVO> listTeamsByPage(TeamQuery teamQuery, boolean isAdmin);
+
+    /**
      * 更新队伍
      * @param teamUpdateRequest
      * @param loginUser
@@ -63,4 +72,5 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     boolean deleteTeam(long id ,User loginUser );
+
 }

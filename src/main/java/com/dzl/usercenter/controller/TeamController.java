@@ -39,8 +39,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/team")
-@Api(tags = "用户管理接口")
-@CrossOrigin(origins = {"http://localhost:3000"})
+@Api(tags = "队伍管理接口")
 @Slf4j
 public class TeamController {
 
@@ -138,42 +137,40 @@ public class TeamController {
     }
     // TODO 分页
     @GetMapping("/list/page")
-    public BaseResponse<Page<Team>> listTeamsByPage(TeamQuery teamQuery, HttpServletRequest request){
+    public BaseResponse<Page<TeamUserVO>> listTeamsByPage(TeamQuery teamQuery, HttpServletRequest request){
         if (teamQuery == null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-//        boolean isAdmin = userService.isAdmin(request);
-//        List<TeamUserVO> teamList = teamService.listTeams(teamQuery , isAdmin);
-//        // 判断当前用户是否已经加入队伍
-//        // teamIdList 是查询出来的team的id的集合
-//        // userTeamList 是查出来当前用户加入的team集合
-//        // hasJoinTeamIdSet 是当前用户加入team的id的集合
-//        final List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
-//        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
-//        User loginUser = userService.getLoginUser(request);
-//        userTeamQueryWrapper.eq("userId",loginUser.getId());
-//        userTeamQueryWrapper.in("teamId",teamIdList);
-//        List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
-//        // 已加入的队伍id集合
-//        Set<Long> hasJoinTeamIdSet = userTeamList.stream().map(UserTeam::getTeamId).collect(Collectors.toSet());
-//        teamList.forEach(team ->{
-//            boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
-//            team.setHasJoin(hasJoin);
-//        });
-//        // 查询已加入队伍的人数
-//        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
-//        userTeamJoinQueryWrapper.in("teamId",teamIdList);
-//        List<UserTeam> userTeamList1 = userTeamService.list(userTeamJoinQueryWrapper);
-//        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList1.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
-//        teamList.forEach(team -> {
-//            int hasJoinNum = teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size();
-//            team.setHasJoinNum(hasJoinNum);
-//        });
-        Team team = BeanUtil.copyProperties(teamQuery, Team.class);
-        Page<Team> page = new Page<>(teamQuery.getPageNum(),teamQuery.getPageSize());
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
-        Page<Team> teamPage = teamService.page(page, queryWrapper);
-        return ResultUtils.success(teamPage);
+        boolean isAdmin = userService.isAdmin(request);
+        Page<TeamUserVO> teamUserVOPage = teamService.listTeamsByPage(teamQuery, isAdmin);
+        List<TeamUserVO> teamList = teamUserVOPage.getRecords();
+        final List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        User loginUser = userService.getLoginUser(request);
+        userTeamQueryWrapper.eq("userId",loginUser.getId());
+        userTeamQueryWrapper.in("teamId",teamIdList);
+        List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+        // 已加入的队伍id集合
+        Set<Long> hasJoinTeamIdSet = userTeamList.stream().map(UserTeam::getTeamId).collect(Collectors.toSet());
+        teamList.forEach(team ->{
+            boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
+            team.setHasJoin(hasJoin);
+        });
+        // 查询已加入队伍的人数
+        QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
+        userTeamJoinQueryWrapper.in("teamId",teamIdList);
+        List<UserTeam> userTeamList1 = userTeamService.list(userTeamJoinQueryWrapper);
+        Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList1.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team -> {
+            int hasJoinNum = teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size();
+            team.setHasJoinNum(hasJoinNum);
+        });
+        teamUserVOPage.setRecords(teamList);
+//        Team team = BeanUtil.copyProperties(teamQuery, Team.class);
+//        Page<Team> page = new Page<>(teamQuery.getPageNum(),teamQuery.getPageSize());
+//        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
+//        Page<Team> teamPage = teamService.page(page, queryWrapper);
+        return ResultUtils.success(teamUserVOPage);
     }
     @PostMapping("/quit")
     public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest, HttpServletRequest request){

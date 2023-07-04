@@ -5,10 +5,21 @@ spring:
   # DataSource Config
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
+#    url: jdbc:mysql://124.221.33.157:3306/yupao?useSSL=false&serverTimezone=UTC
     url: jdbc:mysql://localhost:3306/yupao?useSSL=false&serverTimezone=UTC
     username: root
     password: 123456
 #    password: yyy2331989
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      # 初始化时建立物理连接的个数
+      initial-size: 5
+      # 连接池的最小空闲数量
+      min-idle: 5
+      # 连接池最大连接数量
+      max-active: 20
+      # 获取连接时最大等待时间，单位毫秒
+      max-wait: 60000
   #session失效时间
   session:
     timeout: 86400
@@ -19,9 +30,10 @@ spring:
   #redis 配置
   redis:
     port: 6379
+#    host: 124.221.33.157
     host: localhost
-    database: 0
-    #password: yyy2331989
+    database: 1
+#    password: yyy2331989
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
 server:
@@ -30,7 +42,9 @@ server:
     context-path: /api
     session:
       cookie:
+#        domain: 124.221.33.157
         domain: localhost
+        max-age: 2592000
   address: 0.0.0.0
 
 mybatis-plus:

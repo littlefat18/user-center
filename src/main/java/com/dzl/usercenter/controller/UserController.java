@@ -1,6 +1,7 @@
 package com.dzl.usercenter.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.dzl.usercenter.common.BaseResponse;
@@ -9,6 +10,7 @@ import com.dzl.usercenter.common.ResultUtils;
 import com.dzl.usercenter.exception.BusinessException;
 import com.dzl.usercenter.model.domain.User;
 import com.dzl.usercenter.model.request.UserLoginRequest;
+import com.dzl.usercenter.model.request.UserQueryRequest;
 import com.dzl.usercenter.model.request.UserRegisterRequest;
 import com.dzl.usercenter.model.vo.UserVO;
 import com.dzl.usercenter.service.UserService;
@@ -35,7 +37,6 @@ import static com.dzl.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 @RestController
 @RequestMapping("/user")
 @Api(tags = "用户管理接口")
-@CrossOrigin(origins = {"http://localhost:3000"})
 @Slf4j
 public class UserController {
 
@@ -155,7 +156,22 @@ public class UserController {
         return ResultUtils.success(userPage);
 
     }
-
+    @GetMapping("/{id}")
+    public BaseResponse<UserVO> getUserById(@PathVariable("id") Integer id, HttpServletRequest request) {
+        if (id == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        //long userId = loginUser.getId();
+        //User loginUser1 = userService.getById(userId);
+        //System.out.println("id========================"+loginUser.getUserIds());
+        User user = userService.getById(id);
+        UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+        Boolean isFriend = userService.isFriend(id, loginUser);
+        //System.out.println(isFriend);
+        userVO.setIsFriend(isFriend);
+        return ResultUtils.success(userVO);
+    }
 
 
     @PostMapping("/delete")
@@ -180,6 +196,34 @@ public class UserController {
         User user = userService.getLoginUser(request);
         return ResultUtils.success(userService.matchUsers(num, user));
     }
+
+    @GetMapping("/friends")
+    public BaseResponse<List<User>> getFriends(HttpServletRequest request) {
+        User currentUser = userService.getLoginUser(request);
+        List<User> friends = userService.getFriendsById(currentUser);
+        return ResultUtils.success(friends);
+    }
+
+    @PostMapping("/deleteFriend/{id}")
+    public BaseResponse<Boolean> deleteFriend(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (id == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "好友不存在");
+        }
+        User currentUser = userService.getLoginUser(request);
+        boolean deleteFriend = userService.deleteFriend(currentUser, id);
+        return ResultUtils.success(deleteFriend);
+    }
+
+    @PostMapping("/searchFriend")
+    public BaseResponse<List<User>> searchFriend(@RequestBody UserQueryRequest userQueryRequest, HttpServletRequest request) {
+        if (userQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
+        }
+        User currentUser = userService.getLoginUser(request);
+        List<User> searchFriend = userService.searchFriend(userQueryRequest, currentUser);
+        return ResultUtils.success(searchFriend);
+    }
+
     /**
      * 判断是否为管理员
      * @param request

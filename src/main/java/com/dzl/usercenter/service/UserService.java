@@ -3,6 +3,7 @@ package com.dzl.usercenter.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.dzl.usercenter.model.domain.User;
+import com.dzl.usercenter.model.request.UserQueryRequest;
 import org.springframework.http.HttpRequest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -99,4 +100,31 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<User> matchUsers(long num, User user);
+
+    /**
+     * 搜索好友
+     * @param userQueryRequest
+     * @param currentUser
+     * @return
+     */
+    List<User> searchFriend(UserQueryRequest userQueryRequest, User currentUser);
+
+    /**
+     * 删除好友
+     *
+     * @param currentUser
+     * @param id
+     * @return
+     */
+    boolean deleteFriend(User currentUser, Long id);
+
+    /**
+     * 根据id获取好友列表
+     *
+     * @param currentUser
+     * @return
+     */
+    List<User> getFriendsById(User currentUser);
+
+    Boolean isFriend(Integer id,User currentUser);
 }

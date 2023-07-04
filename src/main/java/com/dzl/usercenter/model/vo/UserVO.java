@@ -82,4 +82,9 @@ public class UserVO implements Serializable {
      * 星球编号
      */
     private String tags;
+
+    /**
+     * 是否是好友
+     */
+    private Boolean isFriend;
 }
