@@ -13,7 +13,6 @@ import java.io.Serializable;
 @Data
 public class WebSocketVo implements Serializable {
 
-    private static final long serialVersionUID = 4696612253320170315L;
 
     private long id;
 
@@ -30,6 +29,6 @@ public class WebSocketVo implements Serializable {
     /**
      * 用户头像
      */
-    private String userAvatarUrl;
+    private String avatarUrl;
 
 }

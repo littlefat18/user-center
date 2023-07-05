@@ -17,6 +17,7 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -93,7 +94,6 @@ public class WebSocket {
     public void setHeatMapService(TeamService teamService) {
         WebSocket.teamService = teamService;
     }
-
 
     /**
      * 队伍内群发消息
