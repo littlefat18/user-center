@@ -12,7 +12,6 @@ import java.io.Serializable;
  */
 @Data
 public class MessageVo implements Serializable {
-    private static final long serialVersionUID = -4722378360550337925L;
     private WebSocketVo formUser;
     private WebSocketVo toUser;
     private Long teamId;

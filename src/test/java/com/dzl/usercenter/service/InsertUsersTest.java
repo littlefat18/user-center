@@ -1,24 +1,27 @@
 package com.dzl.usercenter.service;
 
+import cn.hutool.core.lang.Singleton;
 import com.dzl.usercenter.model.domain.User;
-import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 
 /**
  * @author dzl
  * @date 2022/8/11 14:02
  */
-//@SpringBootTest
+@SpringBootTest
 public class InsertUsersTest {
 
     @Resource
     private UserService userService;
+
+    private ExecutorService executorService = new ThreadPoolExecutor(40, 1000, 10000, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10000));
 
     /**
      * 批量插入用户
@@ -31,7 +34,7 @@ public class InsertUsersTest {
         List<User> userList = new ArrayList<>();
         for (int i = 0; i < INSERT_NUM; i++) {
             User user = new User();
-            user.setUsername("假鱼皮");
+            user.setUsername("原_创 【鱼_皮】https://t.zsxq.com/0emozsIJh");
             user.setUserAccount("fakeyupi");
             user.setAvatarUrl("https://636f-codenav-8grj8px727565176-1256524210.tcb.qcloud.la/img/logo.png");
             user.setGender(0);
@@ -47,7 +50,7 @@ public class InsertUsersTest {
         // 20 秒 10 万条
         userService.saveBatch(userList, 10000);
         stopWatch.stop();
-//        System.out.println(stopWatch.getTotalTimeMillis());
+        System.out.println(stopWatch.getTotalTimeMillis());
     }
 
     /**
@@ -63,7 +66,7 @@ public class InsertUsersTest {
         List<CompletableFuture<Void>> futureList = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             List<User> userList = new ArrayList<>();
-            while(true) {
+            while (true) {
                 j++;
                 User user = new User();
                 user.setUsername("假鱼皮");
@@ -83,16 +86,22 @@ public class InsertUsersTest {
                 }
             }
             // 异步执行
-//            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-//                System.out.println("threadName: " +Thread.currentThread().getName());
-//                userService.saveBatch(userList, batchSize);
-//            }, executorService);
-//            futureList.add(future);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                System.out.println("threadName: " + Thread.currentThread().getName());
+                userService.saveBatch(userList, batchSize);
+            }, executorService);
+            futureList.add(future);
         }
+//        FutureTask<String> futureTask = new FutureTask<>(()->{
+//            return "111";
+//        });
+//        executorService.submit(futureTask);
         CompletableFuture.allOf(futureList.toArray(new CompletableFuture[]{})).join();
         // 20 秒 10 万条
         stopWatch.stop();
-//        System.out.println(stopWatch.getTotalTimeMillis());
+        System.out.println(stopWatch.getTotalTimeMillis());
+
     }
+
 
 }

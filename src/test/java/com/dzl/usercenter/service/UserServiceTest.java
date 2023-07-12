@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dzl.usercenter.model.domain.User;
+import com.dzl.usercenter.test.Car;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ class UserServiceTest {
 
     @Resource
     private UserService userService;
+
     @Test
     public void TestAddUser(){
         User user = new User();

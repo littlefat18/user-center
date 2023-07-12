@@ -37,7 +37,7 @@ import static com.dzl.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 import static com.dzl.usercenter.utils.StringUtils.stringJsonListToLongSet;
 
 /**
- * @author qimu
+ * @author dzl
  */
 @Component
 @Slf4j
