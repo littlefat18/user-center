@@ -11,6 +11,7 @@ import com.dzl.usercenter.constant.UserConstant;
 import com.dzl.usercenter.exception.BusinessException;
 import com.dzl.usercenter.mapper.UserMapper;
 import com.dzl.usercenter.model.domain.User;
+import com.dzl.usercenter.model.request.UpdateTagRequest;
 import com.dzl.usercenter.model.request.UserQueryRequest;
 import com.dzl.usercenter.service.UserService;
 import com.dzl.usercenter.utils.AlgorithmUtils;
@@ -21,6 +22,7 @@ import net.bytebuddy.description.method.MethodDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 import javax.annotation.Resource;
@@ -32,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.dzl.usercenter.constant.RedisConstant.USER_NOT_LOGIN_KEY;
 import static com.dzl.usercenter.constant.RedisConstant.USER_RECOMMEND_KEY;
 import static com.dzl.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 import static com.dzl.usercenter.utils.StringUtils.stringJsonListToLongSet;
@@ -57,9 +60,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private RedisTemplate<String,Object> redisTemplate;
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword,String planetCode) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword,String username) {
         // 1.校验
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword,planetCode)) {
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword,username)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"参数为空");
 
         }
@@ -69,8 +72,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户密码太短");
         }
-        if (planetCode.length()>5){
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"不存在的星球编号");
+        if (username.length()>12){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"昵称过长");
         }
 
         // 账户不能包含特殊字符
@@ -92,13 +95,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户已存在");
         }
 
-        // 星球编号不能重复
-        queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("planetCode", planetCode);
-        count = userMapper.selectCount(queryWrapper);
-        if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"星球编号已有账户");
-        }
+        // 昵称可重复吗？
+//        queryWrapper = new QueryWrapper<>();
+//        queryWrapper.eq("username", username);
+//        count = userMapper.selectCount(queryWrapper);
+//        if (count > 0) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR,"昵称");
+//        }
 
         // 2.加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -107,7 +110,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
         user.setCreateTime(new Date());
-        user.setPlanetCode(planetCode);
+        user.setUsername(username);
         boolean saveResult = this.save(user);
         if (!saveResult) {
             return -1;
@@ -269,14 +272,82 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         if (userObj == null) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
         return (User) userObj;
     }
 
     @Override
+    public String redisFormat(Long key) {
+        return String.format("jingsaibang:user:search:%s", key);
+    }
+
+    /**
+     * 流处理
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateTagById(UpdateTagRequest updateTag, User currentUser) {
+        long id = updateTag.getId();
+        if (id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "该用户不存在");
+        }
+        Set<String> newTags = updateTag.getTagList();
+        if (newTags.size() > 12) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多设置12个标签");
+        }
+        if (!isAdmin(currentUser) && id != currentUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "无权限");
+        }
+        User user = userMapper.selectById(id);
+        Gson gson = new Gson();
+        Set<String> oldTags = gson.fromJson(user.getTags(), new TypeToken<Set<String>>() {
+        }.getType());
+        Set<String> oldTagsCapitalize = toCapitalize(oldTags);
+        Set<String> newTagsCapitalize = toCapitalize(newTags);
+
+        // 添加 newTagsCapitalize 中 oldTagsCapitalize 中不存在的元素
+        oldTagsCapitalize.addAll(newTagsCapitalize.stream().filter(tag -> !oldTagsCapitalize.contains(tag)).collect(Collectors.toSet()));
+        // 移除 oldTagsCapitalize 中 newTagsCapitalize 中不存在的元素
+        oldTagsCapitalize.removeAll(oldTagsCapitalize.stream().filter(tag -> !newTagsCapitalize.contains(tag)).collect(Collectors.toSet()));
+        String tagsJson = gson.toJson(oldTagsCapitalize);
+        user.setTags(tagsJson);
+        return userMapper.updateById(user);
+    }
+    /**
+     * String类型集合首字母大写
+     *
+     * @param oldSet 原集合
+     * @return 首字母大写的集合
+     */
+    private Set<String> toCapitalize(Set<String> oldSet) {
+        return oldSet.stream().map(StringUtils::capitalize).collect(Collectors.toSet());
+    }
+    @Override
     public Page<User> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
-        User loginUser = getLoginUser(request);
+        if (request == null) {
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        // 未登录
+        if (userObj == null) {
+            String notLoginKey = USER_NOT_LOGIN_KEY;
+            Page<User> userPage = (Page<User>) redisTemplate.opsForValue().get(notLoginKey);
+            if (userPage != null){
+                return userPage;
+            }
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            userPage= page(new Page<>(pageNum, pageSize), queryWrapper);
+            // 写缓存
+            try {
+                redisTemplate.opsForValue().set(notLoginKey,userPage,30, TimeUnit.SECONDS);
+            }catch (Exception e){
+                log.error("redis set key error",e);
+            }
+            return userPage;
+        }
+        User loginUser = (User) userObj;
+//        User loginUser = getLoginUser(request);
         long userId = loginUser.getId();
         // 如果有缓存,直接读缓存
         String redisKey = USER_RECOMMEND_KEY + userId;

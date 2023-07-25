@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Date;
 
 @Service
 public class ThirdPartyLoginImpl implements ThirdPartyLoginService {
@@ -49,6 +50,7 @@ public class ThirdPartyLoginImpl implements ThirdPartyLoginService {
                 user.setAvatarUrl(infoVo.getFaceimg());
                 user.setTags("[]");
                 user.setUserIds("[]");
+                user.setCreateTime(new Date());
                 LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<>();
                 userLambdaQueryWrapper.eq(User::getUserAccount, user.getUserAccount());
                 User one = userService.getOne(userLambdaQueryWrapper);

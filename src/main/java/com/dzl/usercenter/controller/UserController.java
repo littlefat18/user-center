@@ -9,6 +9,7 @@ import com.dzl.usercenter.common.ErrorCode;
 import com.dzl.usercenter.common.ResultUtils;
 import com.dzl.usercenter.exception.BusinessException;
 import com.dzl.usercenter.model.domain.User;
+import com.dzl.usercenter.model.request.UpdateTagRequest;
 import com.dzl.usercenter.model.request.UserLoginRequest;
 import com.dzl.usercenter.model.request.UserQueryRequest;
 import com.dzl.usercenter.model.request.UserRegisterRequest;
@@ -56,13 +57,13 @@ public class UserController {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        String planetCode = userRegisterRequest.getPlanetCode();
+        String username = userRegisterRequest.getUsername();
 
-        if (StringUtils.isAnyBlank(userAccount,userPassword,checkPassword,planetCode)){
+        if (StringUtils.isAnyBlank(userAccount,userPassword,checkPassword,username)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"账号密码不能为空");
         }
 
-        long result = userService.userRegister(userAccount, userPassword, checkPassword, planetCode);
+        long result = userService.userRegister(userAccount, userPassword, checkPassword, username);
         return ResultUtils.success(result);
     }
 
@@ -148,6 +149,17 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    @PostMapping("/update/tags")
+    public BaseResponse<Integer> updateTagById(@RequestBody UpdateTagRequest tagRequest, HttpServletRequest request) {
+        if (tagRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User currentUser = userService.getLoginUser(request);
+        int updateTag = userService.updateTagById(tagRequest, currentUser);
+        redisTemplate.delete(userService.redisFormat(currentUser.getId()));
+        return ResultUtils.success(updateTag);
+    }
+
     @GetMapping("/recommend")
     public BaseResponse<Page<User>> recommendUsers(long pageSize,long pageNum,HttpServletRequest request) {
         Page<User> userPage = userService.recommendUsers(pageSize, pageNum, request);
@@ -156,6 +168,9 @@ public class UserController {
         return ResultUtils.success(userPage);
 
     }
+
+
+
     @GetMapping("/{id}")
     public BaseResponse<UserVO> getUserById(@PathVariable("id") Integer id, HttpServletRequest request) {
         if (id == null) {

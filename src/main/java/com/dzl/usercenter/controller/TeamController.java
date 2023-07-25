@@ -23,6 +23,7 @@ import com.dzl.usercenter.service.UserService;
 import com.dzl.usercenter.service.UserTeamService;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -108,6 +109,9 @@ public class TeamController {
         }
         boolean isAdmin = userService.isAdmin(request);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery , isAdmin);
+        if (CollectionUtils.isEmpty(teamList)){
+            return ResultUtils.success(new ArrayList<>());
+        }
         // 判断当前用户是否已经加入队伍
         // teamIdList 是查询出来的team的id的集合
         // userTeamList 是查出来当前用户加入的team集合

@@ -21,7 +21,7 @@ public class InsertUsersTest {
     @Resource
     private UserService userService;
 
-    private ExecutorService executorService = new ThreadPoolExecutor(40, 1000, 10000, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10000));
+    private final ExecutorService executorService = new ThreadPoolExecutor(40, 1000, 10000, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10000));
 
     /**
      * 批量插入用户

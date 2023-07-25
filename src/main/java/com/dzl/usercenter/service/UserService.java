@@ -3,6 +3,7 @@ package com.dzl.usercenter.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.dzl.usercenter.model.domain.User;
+import com.dzl.usercenter.model.request.UpdateTagRequest;
 import com.dzl.usercenter.model.request.UserQueryRequest;
 import org.springframework.http.HttpRequest;
 
@@ -25,7 +26,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword 校验密码
      * @return 新用户 id
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword,String planetCode);
+    long userRegister(String userAccount, String userPassword, String checkPassword,String username);
 
 
     /**
@@ -70,6 +71,21 @@ public interface UserService extends IService<User> {
      */
     User getLoginUser(HttpServletRequest request);
 
+    /**
+     * redisKey
+     *
+     * @param key
+     * @return
+     */
+    String redisFormat(Long key);
+    /**
+     * 修改标签
+     *
+     * @param updateTag   修改标签dto
+     * @param currentUser 当前用户
+     * @return
+     */
+    int updateTagById(UpdateTagRequest updateTag, User currentUser);
     /**
      * 获取推荐用户
      * @param pageSize

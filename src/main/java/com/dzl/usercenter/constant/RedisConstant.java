@@ -6,9 +6,11 @@ package com.dzl.usercenter.constant;
  */
 public interface RedisConstant {
 
-    String USER_RECOMMEND_KEY = "yupao:user:recommend:";
+    String USER_RECOMMEND_KEY = "jingsaibang:user:recommend:";
 
-    String PRECACHE_JOB_KEY = "yupao:precachejob:docache:lock";
+    String USER_NOT_LOGIN_KEY = "jingsaibang:user:notlogin";
 
-    String JOIN_TEAM_KEY = "yupao:join_team:lock";
+    String PRECACHE_JOB_KEY = "jingsaibang:precachejob:docache:lock";
+
+    String JOIN_TEAM_KEY = "jingsaibang:join_team:lock";
 }
