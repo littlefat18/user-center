@@ -111,6 +111,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptPassword);
         user.setCreateTime(new Date());
         user.setUsername(username);
+        user.setTags("[]");
+        user.setUserIds("[]");
         boolean saveResult = this.save(user);
         if (!saveResult) {
             return -1;
@@ -227,6 +229,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setAvatarUrl(originUser.getAvatarUrl());
         safetyUser.setGender(originUser.getGender());
         safetyUser.setPhone(originUser.getPhone());
+        safetyUser.setProfile(originUser.getProfile());
         safetyUser.setEmail(originUser.getEmail());
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());

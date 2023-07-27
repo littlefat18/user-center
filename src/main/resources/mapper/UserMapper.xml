@@ -12,6 +12,7 @@
             <result property="gender" column="gender" jdbcType="TINYINT"/>
             <result property="userPassword" column="userPassword" jdbcType="VARCHAR"/>
             <result property="phone" column="phone" jdbcType="VARCHAR"/>
+            <result property="profile" column="profile" jdbcType="VARCHAR"/>
             <result property="email" column=" email" jdbcType="VARCHAR"/>
             <result property="userStatus" column="userStatus" jdbcType="INTEGER"/>
             <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
@@ -28,7 +29,7 @@
         avatarUrl,gender,userPassword,
         phone,email,userStatus,
         createTime,updateTime,isDelete,
-        userRole,planetCode,tags,userIds
+        userRole,planetCode,tags,userIds,profile
     </sql>
 
 </mapper>
