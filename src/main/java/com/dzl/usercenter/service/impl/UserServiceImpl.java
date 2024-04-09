@@ -438,6 +438,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 .stream()
                 .map(user -> getSafetyUser(user))
                 .collect(Collectors.groupingBy(User::getId));
+
+
         List<User> finalUserList = new ArrayList<>();
         for (Long userId : userIdList) {
             finalUserList.add(userIdUserListMap.get(userId).get(0));

@@ -2,8 +2,10 @@ package com.dzl.usercenter.service;
 
 import cn.hutool.core.lang.Singleton;
 import com.dzl.usercenter.model.domain.User;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
@@ -18,16 +20,18 @@ import java.util.concurrent.*;
 @SpringBootTest
 public class InsertUsersTest {
 
-    @Resource
-    private UserService userService;
+    @Autowired
+    public UserService userService;
 
     private final ExecutorService executorService = new ThreadPoolExecutor(40, 1000, 10000, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10000));
+
+
 
     /**
      * 批量插入用户
      */
     @Test
-    public void doInsertUsers() {
+    public void doInsertUsers1() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         final int INSERT_NUM = 100000;
@@ -44,7 +48,7 @@ public class InsertUsersTest {
             user.setTags("[]");
             user.setUserStatus(0);
             user.setUserRole(0);
-            user.setPlanetCode("11111111");
+//            user.setPlanetCode("11111111");
             userList.add(user);
         }
         // 20 秒 10 万条
@@ -97,9 +101,11 @@ public class InsertUsersTest {
 //        });
 //        executorService.submit(futureTask);
         CompletableFuture.allOf(futureList.toArray(new CompletableFuture[]{})).join();
-        // 20 秒 10 万条
+//        CompletableFuture.allOf(futureList.toArray(CompletableFuture[]::new)).join();
+        // 20 秒 10 万条z
         stopWatch.stop();
         System.out.println(stopWatch.getTotalTimeMillis());
+        executorService.shutdown();
 
     }
 
